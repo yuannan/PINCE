@@ -12,16 +12,16 @@
       packages = forEachSystem (system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
-          python = pkgs.python311;
+          python = pkgs.python3;
           pythonEnv = python.withPackages (ps: with ps; [
             pyqt6
             pycairo
             pygobject3
             capstone
-            keyboard
             keystone-engine
             pygdbmi
             pexpect
+            keyboard
           ]);
           
           # Fetch libscanmem separately
@@ -162,6 +162,7 @@
                   pkgs.xorg.libXi
                   pkgs.xorg.libXrandr
                   pkgs.wayland
+                  pkgs.gdb
                 ]}" \
                 --prefix GI_TYPELIB_PATH : "${pkgs.lib.makeSearchPath "lib/girepository-1.0" [
                   pkgs.gtk3
