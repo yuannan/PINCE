@@ -15,3 +15,5 @@ gdb_pince/*
 *.gnbs.conf
 .venv/*
 *.AppImage
+flake.lock
+result
