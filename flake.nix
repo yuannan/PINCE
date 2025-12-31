@@ -97,6 +97,11 @@
               ls -la $sourceRoot/
             '';
 
+            postPatch = ''
+              substituteInPlace $(grep -rl '"/bin/gdb"' .) \
+                --replace '"/bin/gdb"' '"${pkgs.gdb}/bin/gdb"'
+            '';
+
             buildPhase = ''
               runHook preBuild
               
