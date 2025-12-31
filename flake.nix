@@ -173,7 +173,7 @@
                 --set PYTHONPATH "$out/share/pince" \
                 --set PYTHONDONTWRITEBYTECODE "1" \
                 --add-flags "$out/share/pince/PINCE.py" \
-                --prefix PATH : "${pkgs.lib.makeBinPath [ pkgs.sudo pkgs.gdb ]}"
+                --prefix PATH : "${pkgs.lib.makeBinPath [ pkgs.sudo pkgs.gdb pythonEnv ]}"
               
               runHook postInstall
             '';
