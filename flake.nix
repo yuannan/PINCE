@@ -12,16 +12,36 @@
       packages = forEachSystem (system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
-          python = pkgs.python3;
+          python = pkgs.python311;
           pythonEnv = python.withPackages (ps: with ps; [
             pyqt6
             pycairo
             pygobject3
             capstone
+            keyboard
             keystone-engine
             pygdbmi
             pexpect
           ]);
+          
+          # Fetch libscanmem separately
+          libscanmem-src = pkgs.fetchFromGitHub {
+            owner = "brkzlr";
+            repo = "libscanmem-PINCE";
+            rev = "e69461446cf9a541ed4c2a4a7b1bc6621503d218";
+            sha256 = "sha256-s0HCgd7VM9uKXLfZl5h5Xv7GNoQkqg78nWcGIpXX8DA=";
+          };
+          
+          # Fetch libptrscan files
+          libptrscanSource = pkgs.fetchurl {
+            url = "https://github.com/kekeimiku/PointerSearcher-X/archive/refs/tags/v0.7.4-dylib.tar.gz";
+            sha256 = "sha256-LKRAJx6PFfV9vCq9n08Oye8zkgXUQvGQ1jQOGnXiByI=";
+          };
+          
+          libptrscanBinary = pkgs.fetchurl {
+            url = "https://github.com/kekeimiku/PointerSearcher-X/releases/download/v0.7.4-dylib/libptrscan_pince-x86_64-unknown-linux-gnu.tar.gz";
+            sha256 = "sha256-woo19XWAoQ/YJrmCBhgQNopCedOJig7xp4a9+Ljz+/M=";
+          };
         in
         {
           default = self.packages.${system}.PINCE;
@@ -67,23 +87,39 @@
             # Don't run cmake automatically
             dontConfigure = true;
 
+            postUnpack = ''
+              # Copy libscanmem source into the build
+              echo "Copying libscanmem source..."
+              cp -r ${libscanmem-src} $sourceRoot/libscanmem-PINCE
+              chmod -R u+w $sourceRoot/libscanmem-PINCE
+              
+              echo "Contents after copying:"
+              ls -la $sourceRoot/
+            '';
+
             buildPhase = ''
               runHook preBuild
               
               # Build libscanmem
               echo "Building libscanmem..."
               
-              if [ -d "libscanmem-PINCE" ]; then
-                mkdir -p libpince/libscanmem
-                cd libscanmem-PINCE
-                cmake -DCMAKE_BUILD_TYPE=Release .
-                make -j$NIX_BUILD_CORES
-                cp libscanmem.so ../libpince/libscanmem/
-                cp wrappers/scanmem.py ../libpince/libscanmem/
-                cd ..
-              else
-                echo "Warning: libscanmem-PINCE directory not found!"
-              fi
+              mkdir -p libpince/libscanmem
+              cd libscanmem-PINCE
+              cmake -DCMAKE_BUILD_TYPE=Release .
+              make -j$NIX_BUILD_CORES
+              cp libscanmem.so ../libpince/libscanmem/
+              cp wrappers/scanmem.py ../libpince/libscanmem/
+              cd ..
+              
+              # Extract libptrscan
+              echo "Installing libptrscan..."
+              mkdir -p libpince/libptrscan
+              
+              # Extract source (for license compliance)
+              tar xf ${libptrscanSource} -C libpince/libptrscan
+              
+              # Extract binary
+              tar xf ${libptrscanBinary} -C libpince/libptrscan --strip-components 1
               
               # Compile translations
               echo "Compiling translations..."
